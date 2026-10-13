@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR BOX PAY - ระบบสร้าง QR Code รับเงินมาตรฐาน PromptPay</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & Prompt for Thai typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QRCode.js Library for high accuracy QR rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brandBg: '#101010',
+                        brandCard: '#191919',
+                        brandRed: '#FF303B',
+                        brandRedHover: '#E02832',
+                        brandBorder: '#303030',
+                        brandText: '#FFFFFF',
+                        brandMuted: '#A3A3A3',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #101010;
+            color: #FFFFFF;
+            font-family: 'Prompt', sans-serif;
+            overflow-x: hidden;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101010;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #303030;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF303B;
+        }
+        .gradient-border {
+            border: 1px solid transparent;
+            background: linear-gradient(#191919, #191919) padding-box,
+                        linear-gradient(135deg, #303030 0%, #FF303B 100%) border-box;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-[#FF303B] selection:text-white">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <header class="sticky top-0 z-40 bg-[#101010]/95 backdrop-blur-md border-b border-[#303030]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <!-- Brand Logo & Slogan -->
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="switchTab('home')">
+                <div class="w-12 h-12 rounded-xl bg-[#191919] border border-[#303030] p-1.5 flex items-center justify-center shadow-lg group-hover:border-[#FF303B] transition-all duration-300">
+                    <!-- SVG Box QR Logo Replica matching the master image -->
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" fill="#191919" stroke="#FF303B" stroke-width="3"/>
+                        <path d="M50,5 L90,25 L50,45 L10,25 Z" fill="#303030" opacity="0.8"/>
+                        <path d="M10,25 L50,45 L50,95 L10,75 Z" fill="#202020"/>
+                        <path d="M90,25 L50,45 L50,95 L90,75 Z" fill="#151515"/>
+                        <!-- QR Square Top -->
+                        <rect x="35" y="18" width="10" height="10" fill="#FFFFFF" transform="rotate(-25 40 23)"/>
+                        <rect x="55" y="18" width="10" height="10" fill="#FFFFFF" transform="rotate(25 60 23)"/>
+                        <!-- Curved Red Swoosh Arrow -->
+                        <path d="M 15 65 Q 40 85 85 40" fill="none" stroke="#FF303B" stroke-width="7" stroke-linecap="round"/>
+                        <polygon points="85,35 90,48 77,44" fill="#FF303B"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-xl font-black tracking-wider flex items-center gap-2">
+                        QR BOX <span class="text-[#FF303B] text-xs px-2 py-0.5 rounded bg-[#FF303B]/10 border border-[#FF303B]/30 font-semibold">PAY</span>
+                    </div>
+                    <div class="text-[10px] tracking-widest text-[#A3A3A3] font-mono uppercase">CREATE. CONNECT. TRACK.</div>
+                </div>
+            </div>
+
+            <!-- Navigation Bar -->
+            <nav class="hidden md:flex items-center gap-1">
+                <button onclick="switchTab('home')" id="nav-home" class="nav-btn px-4 py-2 rounded-xl text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#191919] transition-all">
+                    หน้าแรก
+                </button>
+                <button onclick="switchTab('generator')" id="nav-generator" class="nav-btn px-4 py-2 rounded-xl text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#191919] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-qrcode text-[#FF303B]"></i> สร้าง QR รับเงิน
+                </button>
+                <button onclick="switchTab('saved')" id="nav-saved" class="nav-btn px-4 py-2 rounded-xl text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#191919] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-bookmark text-[#A3A3A3]"></i> ข้อมูลผู้รับเงิน
+                </button>
+                <button onclick="switchTab('history')" id="nav-history" class="nav-btn px-4 py-2 rounded-xl text-sm font-medium text-[#A3A3A3] hover:text-white hover:bg-[#191919] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-[#FF303B] fa-receipt text-[#A3A3A3]"></i> ตรวจสอบธุรกรรม
+                </button>
+            </nav>
+
+            <!-- User Auth Controls -->
+            <div id="auth-actions-container" class="flex items-center gap-2">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- SECTION 1: HOME PAGE -->
+        <section id="tab-home" class="tab-content space-y-16 py-6">
+            <div class="text-center max-w-3xl mx-auto space-y-6">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#191919] border border-[#303030] text-xs font-semibold text-[#FF303B]">
+                    <i class="fa-solid fa-bolt"></i> ระบบสร้าง QR Code รับเงินมาตรฐาน PromptPay ไทย
+                </div>
+                <h1 class="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
+                    สร้าง QR Code รับเงิน<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-[#FF303B]">ได้ง่ายในที่เดียว</span>
+                </h1>
+                <p class="text-[#A3A3A3] text-base sm:text-lg max-w-2xl mx-auto font-light">
+                    สร้าง QR รับเงินผ่าน PromptPay บันทึกข้อมูลผู้รับเงิน และดาวน์โหลด QR Code เพื่อนำไปใช้งานได้สะดวก รวดเร็ว ปลอดภัย ไร้ค่าบริการ
+                </p>
+                <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+                    <button onclick="switchTab('generator')" class="px-8 py-4 rounded-xl font-bold bg-[#FF303B] text-white hover:bg-[#E02832] transition-all shadow-lg shadow-[#FF303B]/25 flex items-center gap-3 text-base group">
+                        <i class="fa-solid fa-qrcode group-hover:scale-110 transition-transform"></i> เริ่มสร้าง QR รับเงินทันที
+                    </button>
+                    <button onclick="switchTab('saved')" class="px-8 py-4 rounded-xl font-bold bg-[#191919] text-white border border-[#303030] hover:border-[#FF303B] transition-all flex items-center gap-3 text-base">
+                        <i class="fa-solid fa-bookmark text-[#FF303B]"></i> ข้อมูลผู้รับเงินที่บันทึกไว้
+                    </button>
+                </div>
+            </div>
+
+            <!-- Steps Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
+                <div class="bg-[#191919] border border-[#303030] rounded-2xl p-6 space-y-4 hover:border-[#FF303B]/50 transition-all">
+                    <div class="w-12 h-12 rounded-xl bg-[#FF303B]/10 border border-[#FF303B]/30 flex items-center justify-center text-[#FF303B] text-xl font-bold">
+                        1
+                    </div>
+                    <h3 class="text-xl font-bold">เลือกประเภทและกรอกข้อมูล</h3>
+                    <p class="text-[#A3A3A3] text-sm leading-relaxed">
+                        รองรับ PromptPay ทั้งเบอร์โทรศัพท์มือถือ และหมายเลขบัตรประชาชน ตรวจสอบโครงสร้างข้อมูลถูกต้องตามมาตรฐาน EMVCo
+                    </p>
+                </div>
+
+                <div class="bg-[#191919] border border-[#303030] rounded-2xl p-6 space-y-4 hover:border-[#FF303B]/50 transition-all">
+                    <div class="w-12 h-12 rounded-xl bg-[#FF303B]/10 border border-[#FF303B]/30 flex items-center justify-center text-[#FF303B] text-xl font-bold">
+                        2
+                    </div>
+                    <h3 class="text-xl font-bold">กำหนดจำนวนเงินและปรับแต่ง</h3>
+                    <p class="text-[#A3A3A3] text-sm leading-relaxed">
+                        ระบุยอดเงินล่วงหน้า หรือเว้นว่างให้ผู้จ่ายกรอกเองได้ เลือกปรับแต่งสี ปรับขนาด และข้อความใต้ภาพได้ตามต้องการ
+                    </p>
+                </div>
+
+                <div class="bg-[#191919] border border-[#303030] rounded-2xl p-6 space-y-4 hover:border-[#FF303B]/50 transition-all">
+                    <div class="w-12 h-12 rounded-xl bg-[#FF303B]/10 border border-[#FF303B]/30 flex items-center justify-center text-[#FF303B] text-xl font-bold">
+                        3
+                    </div>
+                    <h3 class="text-xl font-bold">ดาวน์โหลดและรับเงินทันที</h3>
+                    <p class="text-[#A3A3A3] text-sm leading-relaxed">
+                        ดาวน์โหลดภาพ PNG ความละเอียดสูง นำไปแสดงหน้าร้านหรือส่งให้ลูกค้าสแกนจ่ายผ่านแอปพลิเคชันทุกธนาคารในไทย
+                    </p>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="bg-[#191919] border border-[#303030] rounded-2xl p-8 space-y-6">
+                <h3 class="text-2xl font-bold text-center">คำถามที่พบบ่อยเกี่ยวกับ QR BOX PAY</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div class="space-y-2">
+                        <h4 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-question text-[#FF303B]"></i> QR BOX มีค่าบริการหรือไม่?
+                        </h4>
+                        <p class="text-sm text-[#A3A3A3]">
+                            ไม่มีค่าบริการใดๆ ทั้งสิ้น เว็บไซต์เปิดให้สร้าง QR Code รับเงินได้ฟรี 100% ไม่มีระบบ Pro, Premium หรือค่าใช้จ่ายแอบแฝง
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-circle-question text-[#FF303B]"></i> QR Code สแกนผ่านแอปธนาคารได้จริงหรือไม่?
+                        </h4>
+                        <p class="text-sm text-[#A3A3A3]">
+                            สแกนได้จริง 100% เข้ารหัสข้อมูลตามมาตรฐาน Thai PromptPay EMVCo และคำนวณ CRC16 ถูกต้องสมบูรณ์ตามข้อกำหนดสถาบันการเงิน
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: QR GENERATOR & CUSTOMIZER -->
+        <section id="tab-generator" class="tab-content hidden space-y-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#303030] pb-6">
+                <div>
+                    <h2 class="text-3xl font-black tracking-tight">สร้าง QR Code รับเงิน</h2>
+                    <p class="text-sm text-[#A3A3A3] mt-1">กรอกข้อมูลผู้รับเงินและกำหนดจำนวนเงินเพื่อสร้าง QR มาตรฐาน PromptPay</p>
+                </div>
+                <button onclick="saveCurrentRecipient()" class="px-4 py-2.5 rounded-xl bg-[#191919] border border-[#303030] hover:border-[#FF303B] text-sm font-semibold flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-bookmark text-[#FF303B]"></i> บันทึกข้อมูลผู้รับเงินนี้
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Form Inputs -->
+                <div class="lg:col-span-7 bg-[#191919] border border-[#303030] rounded-2xl p-6 sm:p-8 space-y-6">
+                    
+                    <!-- Identifier Type Selector -->
+                    <div class="space-y-3">
+                        <label class="text-sm font-semibold text-white block">ประเภทข้อมูลรับเงิน</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button type="button" onclick="setTargetType('phone')" id="type-btn-phone" class="py-3 px-4 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-all bg-[#FF303B]/10 border-[#FF303B] text-white">
+                                <i class="fa-solid fa-mobile-screen text-[#FF303B]"></i> เบอร์โทรศัพท์ PromptPay
+                            </button>
+                            <button type="button" onclick="setTargetType('id')" id="type-btn-id" class="py-3 px-4 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-all bg-[#101010] border-[#303030] text-[#A3A3A3] hover:text-white">
+                                <i class="fa-solid fa-id-card text-[#FF303B]"></i> เลขบัตรประชาชน
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Target Identifier Input -->
+                    <div class="space-y-2">
+                        <label id="target-label" class="text-sm font-semibold text-white block">หมายเลขโทรศัพท์มือถือ (10 หลัก)</label>
+                        <input type="text" id="target-input" oninput="renderQR()" placeholder="0812345678" maxlength="10" class="w-full bg-[#101010] border border-[#303030] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF303B] transition-colors font-mono text-base tracking-wider">
+                        <p class="text-xs text-[#A3A3A3]">ระบบจะแปลงเป็นรหัส PromptPay มาตรฐาน (0066...)</p>
+                    </div>
+
+                    <!-- Label & Amount Inputs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-white block">ชื่อผู้รับ / ชื่อร้านค้า</label>
+                            <input type="text" id="label-input" oninput="renderQR()" placeholder="เช่น ร้านค้าของคุณ" value="ร้านค้าของคุณ" class="w-full bg-[#101010] border border-[#303030] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF303B] transition-colors text-sm">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-white block">จำนวนเงิน (บาท) - ไม่บังคับ</label>
+                            <input type="number" step="0.01" id="amount-input" oninput="renderQR()" placeholder="0.00 (ให้ผู้จ่ายระบุเอง)" class="w-full bg-[#101010] border border-[#303030] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF303B] transition-colors text-sm font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-white block">หมายเหตุเพิ่มเติม</label>
+                        <input type="text" id="note-input" placeholder="เช่น ค่าสินค้า หรือ ค่าบริการ" class="w-full bg-[#101010] border border-[#303030] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF303B] transition-colors text-sm">
+                    </div>
+
+                    <!-- Style Customizer Controls -->
+                    <div class="pt-4 border-t border-[#303030] space-y-4">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-palette text-[#FF303B]"></i> ปรับแต่งรูปลักษณ์ QR Code
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="text-xs text-[#A3A3A3] block mb-1">สี QR Code</label>
+                                <input type="color" id="qr-color" value="#000000" onchange="renderQR()" class="w-full h-10 rounded bg-[#101010] border border-[#303030] cursor-pointer p-1">
+                            </div>
+                            <div>
+                                <label class="text-xs text-[#A3A3A3] block mb-1">สีพื้นหลัง</label>
+                                <input type="color" id="bg-color" value="#FFFFFF" onchange="renderQR()" class="w-full h-10 rounded bg-[#101010] border border-[#303030] cursor-pointer p-1">
+                            </div>
+                            <div class="col-span-2 sm:col-span-1">
+                                <label class="text-xs text-[#A3A3A3] block mb-1">ขนาดพิกเซล</label>
+                                <select id="size-select" onchange="renderQR()" class="w-full bg-[#101010] border border-[#303030] rounded-lg px-3 py-2 text-xs text-white">
+                                    <option value="256">256 x 256 px</option>
+                                    <option value="512" selected>512 x 512 px</option>
+                                    <option value="1024">1024 x 1024 px</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Preview & Export Container -->
+                <div class="lg:col-span-5 flex flex-col items-center">
+                    <div class="w-full bg-[#191919] border border-[#303030] rounded-2xl p-6 sm:p-8 flex flex-col items-center text-center space-y-6 sticky top-28 shadow-2xl">
+                        
+                        <div class="w-full flex items-center justify-between text-xs">
+                            <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved"></i> Standard EMVCo Payload
+                            </span>
+                            <span class="text-[#A3A3A3] font-mono">CRC-16 Verified</span>
+                        </div>
+
+                        <!-- Main Canvas / Printable Frame -->
+                        <div id="qr-frame" class="p-6 rounded-2xl shadow-2xl flex flex-col items-center justify-center transition-all border border-[#303030] w-full max-w-[320px]" style="background-color: #FFFFFF;">
+                            
+                            <div class="w-full text-center pb-3 border-b border-gray-200 mb-3">
+                                <div class="text-xs font-black tracking-widest text-[#101010] flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-qrcode text-[#FF303B]"></i> THAI PROMPTPAY
+                                </div>
+                            </div>
+
+                            <div id="qrcode-target" class="p-2 flex items-center justify-center min-h-[200px]"></div>
+
+                            <div class="mt-3 space-y-1 w-full text-center">
+                                <div id="preview-label" class="font-bold text-sm text-[#101010]">ร้านค้าของคุณ</div>
+                                <div id="preview-target" class="text-xs font-mono text-gray-600">กรุณากรอกข้อมูลรับเงิน</div>
+                                <div id="preview-amount" class="text-sm font-extrabold text-[#FF303B] hidden">0.00 THB</div>
+                            </div>
+                        </div>
+
+                        <!-- Actions Buttons -->
+                        <div class="w-full space-y-3 pt-2">
+                            <button onclick="downloadQRImage()" id="download-btn" disabled class="w-full py-3.5 px-6 rounded-xl font-bold bg-[#FF303B] text-white hover:bg-[#E02832] transition-all shadow-lg shadow-[#FF303B]/20 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-download"></i> ดาวน์โหลดภาพ QR (PNG)
+                            </button>
+                            <button onclick="copyPayload()" id="copy-btn" disabled class="w-full py-3 px-6 rounded-xl font-medium bg-[#101010] text-[#A3A3A3] hover:text-white border border-[#303030] hover:border-[#FF303B] transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-copy"></i> คัดลอกรหัส Payload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: SAVED RECIPIENTS -->
+        <section id="tab-saved" class="tab-content hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#303030] pb-6">
+                <div>
+                    <h2 class="text-3xl font-black tracking-tight">ข้อมูลผู้รับเงินที่บันทึกไว้</h2>
+                    <p class="text-sm text-[#A3A3A3] mt-1">จัดการรายการผู้รับเงิน บันทึกและเรียกใช้งานได้ทันทีโดยไม่ต้องกรอกใหม่</p>
+                </div>
+                <button onclick="switchTab('generator')" class="px-4 py-2.5 rounded-xl bg-[#FF303B] text-white text-sm font-bold hover:bg-[#E02832] transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> เพิ่มรายการใหม่
+                </button>
+            </div>
+
+            <div id="recipients-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamically Injected Saved Recipients -->
+            </div>
+        </section>
+
+        <!-- SECTION 4: TRANSACTION HISTORY & PROVIDER ADAPTER -->
+        <section id="tab-history" class="tab-content hidden space-y-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#303030] pb-6">
+                <div>
+                    <h2 class="text-3xl font-black tracking-tight">ประวัติธุรกรรมและการตรวจสอบเงินเข้า</h2>
+                    <p class="text-sm text-[#A3A3A3] mt-1">การสร้าง QR Code แยกจากการยืนยันเงินเข้า ระบบจะแสดงสถานะ Paid เมื่อเชื่อมต่อ Provider อนุมัติจริง</p>
+                </div>
+                <button onclick="toggleProviderConnection()" id="provider-toggle-btn" class="px-4 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-2 transition-all bg-[#191919] border-[#303030] text-[#A3A3A3] hover:text-white">
+                    <i class="fa-solid fa-server"></i> จำลองการเชื่อมต่อ Payment Provider
+                </button>
+            </div>
+
+            <!-- Provider Disclaimer Box -->
+            <div id="provider-alert" class="bg-[#191919] border border-[#303030] rounded-2xl p-6 flex items-start gap-4">
+                <i class="fa-solid fa-circle-exclamation text-amber-400 text-2xl shrink-0 mt-0.5"></i>
+                <div class="space-y-1">
+                    <h4 class="font-bold text-white">ยังไม่ได้เชื่อมต่อระบบตรวจสอบเงินเข้าอัตโนมัติ</h4>
+                    <p class="text-sm text-[#A3A3A3] leading-relaxed">
+                        การสร้าง PromptPay QR Code สามารถใช้งานได้ตามปกติ แต่ระบบจะไม่แสดงสถานะ Paid หรือข้อมูลธุรกรรมปลอม จนกว่าจะเชื่อมต่อกับ Payment Provider API หรือ Webhook ที่ได้รับอนุญาตจริง
+                    </p>
+                </div>
+            </div>
+
+            <!-- Transactions List Table -->
+            <div class="bg-[#191919] border border-[#303030] rounded-2xl overflow-hidden">
+                <div class="p-6 border-b border-[#303030] flex items-center justify-between">
+                    <h3 class="font-bold text-base">รายการธุรกรรมล่าสุด</h3>
+                    <span class="text-xs text-[#A3A3A3] font-mono">Real-time Webhook Feed</span>
+                </div>
+                <div id="transactions-list" class="divide-y divide-[#303030]">
+                    <!-- Injected via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: AUTHENTICATION MODAL / TAB -->
+        <section id="tab-auth" class="tab-content hidden max-w-md mx-auto py-12">
+            <div class="bg-[#191919] border border-[#303030] rounded-2xl p-8 space-y-6 shadow-2xl">
+                <div class="text-center space-y-2">
+                    <div class="w-12 h-12 rounded-xl bg-[#FF303B]/10 border border-[#FF303B]/30 flex items-center justify-center text-[#FF303B] text-xl mx-auto">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <h2 id="auth-title" class="text-2xl font-black">เข้าสู่ระบบ QR BOX PAY</h2>
+                    <p class="text-xs text-[#A3A3A3]">จัดการข้อมูลผู้รับเงินและใช้งานซ้ำได้อย่างปลอดภัย</p>
+                </div>
+
+                <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-white block">อีเมลของคุณ</label>
+                        <input type="email" id="auth-email" required placeholder="name@example.com" class="w-full bg-[#101010] border border-[#303030] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF303B] text-sm">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-white block">รหัสผ่าน</label>
+                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-[#101010] border border-[#303030] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#FF303B] text-sm">
+                    </div>
+                    <button type="submit" id="auth-submit-btn" class="w-full py-3.5 px-6 rounded-xl font-bold bg-[#FF303B] text-white hover:bg-[#E02832] transition-all shadow-lg shadow-[#FF303B]/20">
+                        เข้าสู่ระบบ
+                    </button>
+                </form>
+
+                <div class="text-center pt-2">
+                    <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-[#A3A3A3] hover:text-white transition-colors">
+                        ยังไม่มีบัญชีผู้ใช้? สมัครสมาชิกที่นี่
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6: PRIVACY POLICY -->
+        <section id="tab-privacy" class="tab-content hidden max-w-3xl mx-auto py-8 space-y-6">
+            <h2 class="text-3xl font-black">นโยบายความเป็นส่วนตัว (Privacy Policy)</h2>
+            <div class="bg-[#191919] border border-[#303030] rounded-2xl p-8 space-y-4 text-sm text-[#A3A3A3] leading-relaxed">
+                <p>QR BOX PAY ให้ความสำคัญสูงสุดแก่ความปลอดภัยของข้อมูลผู้ใช้งาน ข้อมูลผู้รับเงินที่ท่านนำมาสร้าง QR Code จะได้รับการเข้ารหัสและจัดเก็บในฐานข้อมูล Supabase ด้วยนโยบาย Row Level Security (RLS)</p>
+                <h3 class="text-white font-bold text-base">1. ข้อมูลที่เราจัดเก็บ</h3>
+                <p>เราเก็บเฉพาะข้อมูลที่ท่านระบุเพื่อความสะดวกในการบันทึกรายชื่อผู้รับเงิน เช่น หมายเลข PromptPay ชื่อเรียก และยอดเงินเริ่มต้น</p>
+                <h3 class="text-white font-bold text-base">2. การไม่เปิดเผยข้อมูล</h3>
+                <p>เราไม่มีนโยบายส่งต่อหรือขายข้อมูลผู้รับเงินแก่บุคคลภายนอก ข้อมูลจะเข้าถึงได้เฉพาะบัญชีผู้ใช้งานที่เป็นเจ้าของเท่านั้น</p>
+            </div>
+        </section>
+
+        <!-- SECTION 7: TERMS OF USE -->
+        <section id="tab-terms" class="tab-content hidden max-w-3xl mx-auto py-8 space-y-6">
+            <h2 class="text-3xl font-black">เงื่อนไขการใช้งาน (Terms of Use)</h2>
+            <div class="bg-[#191919] border border-[#303030] rounded-2xl p-8 space-y-4 text-sm text-[#A3A3A3] leading-relaxed">
+                <p>การใช้งานเว็บไซต์ QR BOX PAY ถือว่าท่านยอมรับข้อตกลงและเงื่อนไขดังต่อไปนี้:</p>
+                <h3 class="text-white font-bold text-base">1. การใช้งานเพื่อรับชำระเงิน</h3>
+                <p>เว็บไซต์นี้ให้บริการสร้าง QR Code สำหรับรับเงินผ่าน PromptPay มาตรฐานเท่านั้น ผู้ใช้มีหน้าที่ตรวจสอบความถูกต้องของหมายเลขรับเงินและจำนวนเงินก่อนนำไปแสดงให้ลูกค้าสแกน</p>
+                <h3 class="text-white font-bold text-base">2. ข้อจำกัดความรับผิดชอบ</h3>
+                <p>QR BOX PAY ไม่ใช่สถาบันการเงินและไม่มีส่วนเกี่ยวข้องกับการทำธุรกรรมโอนเงินของธนาคาร ทางเว็บไซต์จะไม่รับผิดชอบกรณีผู้ใช้ระบุหมายเลขรับเงินผิดพลาด</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-[#303030] bg-[#101010] py-10 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#191919] border border-[#303030] flex items-center justify-center text-[#FF303B]">
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+                <div>
+                    <div class="font-bold text-sm">QR BOX PAY</div>
+                    <div class="text-[10px] text-[#A3A3A3] font-mono">CREATE. CONNECT. TRACK.</div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-[#A3A3A3]">
+                <button onclick="switchTab('home')" class="hover:text-white transition-colors">หน้าแรก</button>
+                <button onclick="switchTab('generator')" class="hover:text-white transition-colors">สร้าง QR รับเงิน</button>
+                <button onclick="switchTab('privacy')" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</button>
+                <button onclick="switchTab('terms')" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</button>
+            </div>
+
+            <div class="text-xs text-[#A3A3A3] font-mono">
+                &copy; 2026 QR BOX PAY. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // State Variables
+        let currentTab = 'home';
+        let targetType = 'phone'; // 'phone' or 'id'
+        let currentUser = null;
+        let authMode = 'login'; // 'login' or 'register'
+        let qrcodeObj = null;
+        let isProviderConnected = false;
+
+        // In-Memory Database for Recipients & Transactions
+        let recipients = [
+            {
+                id: 'rec-1',
+                label: 'ร้านกาแฟสาขาหลัก',
+                target_type: 'phone',
+                identifier: '0891234567',
+                default_amount: '65.00',
+                note: 'ค่ากาแฟสด',
+                created_at: new Date().toISOString()
+            },
+            {
+                id: 'rec-2',
+                label: 'รับเงินส่วนตัว',
+                target_type: 'id',
+                identifier: '1100701234567',
+                default_amount: '',
+                note: 'โอนเงินทั่วไป',
+                created_at: new Date().toISOString()
+            }
+        ];
+
+        let transactions = [
+            {
+                id: 'TXN-984210',
+                provider: 'PromptPay API Adapter (Mock Live)',
+                amount: '150.00',
+                currency: 'THB',
+                status: 'PENDING_PROVIDER',
+                verified_at: null,
+                created_at: new Date(Date.now() - 3600000).toISOString()
+            }
+        ];
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border backdrop-blur-md pointer-events-auto transition-all transform translate-y-2 ${
+                type === 'error' ? 'bg-[#FF303B]/20 border-[#FF303B] text-white' : 'bg-[#191919] border-[#303030] text-white'
+            }`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation text-[#FF303B]' : 'fa-circle-check text-emerald-500'}"></i>
+                <span class="text-sm font-medium">${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // PromptPay EMVCo Payload & CRC16 Calculation Engine
+        function calculateCRC16(payload) {
+            let crc = 0xFFFF;
+            for (let i = 0; i < payload.length; i++) {
+                let x = ((crc >> 8) ^ payload.charCodeAt(i)) & 0xFF;
+                x ^= x >> 4;
+                crc = ((crc << 8) ^ (x << 12) ^ (x << 5) ^ x) & 0xFFFF;
+            }
+            let hex = crc.toString(16).toUpperCase();
+            while (hex.length < 4) hex = '0' + hex;
+            return hex;
+        }
+
+        function generatePromptPayPayload(target, amount) {
+            let cleanTarget = target.replace(/[^0-9]/g, '');
+            let targetField = '';
+
+            if (cleanTarget.length === 10) {
+                // Mobile Number: Format as 0066 + digits without leading 0
+                let formattedMobile = '0066' + cleanTarget.substring(1);
+                targetField = '01' + formattedMobile.length.toString().padStart(2, '0') + formattedMobile;
+            } else if (cleanTarget.length === 13) {
+                // National ID
+                targetField = '02' + cleanTarget.length.toString().padStart(2, '0') + cleanTarget;
+            } else {
+                return null;
+            }
+
+            let merchantAccountInfo = '0016A000000677010111' + targetField;
+            let merchantTag = '29' + merchantAccountInfo.length.toString().padStart(2, '0') + merchantAccountInfo;
+
+            let formattedAmount = '';
+            if (amount && parseFloat(amount) > 0) {
+                let amtStr = parseFloat(amount).toFixed(2);
+                formattedAmount = '54' + amtStr.length.toString().padStart(2, '0') + amtStr;
+            }
+
+            let payload = 
+                '000201' + // Payload Format
+                '010211' + // Dynamic/Static
+                merchantTag +
+                '5303764' + // Currency: THB
+                formattedAmount +
+                '5802TH' + // Country Code
+                '6304';    // CRC Marker
+
+            let crc = calculateCRC16(payload);
+            return payload + crc;
+        }
+
+        // Tab Navigation Router
+        function switchTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const targetSection = document.getElementById(`tab-${tabName}`);
+            if (targetSection) targetSection.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-white', 'bg-[#191919]');
+                btn.classList.add('text-[#A3A3A3]');
+            });
+            const activeNav = document.getElementById(`nav-${tabName}`);
+            if (activeNav) {
+                activeNav.classList.remove('text-[#A3A3A3]');
+                activeNav.classList.add('text-white', 'bg-[#191919]');
+            }
+
+            if (tabName === 'generator') {
+                renderQR();
+            } else if (tabName === 'saved') {
+                renderSavedRecipients();
+            } else if (tabName === 'history') {
+                renderTransactions();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Generator Mode Toggle
+        function setTargetType(type) {
+            targetType = type;
+            const input = document.getElementById('target-input');
+            const label = document.getElementById('target-label');
+            const btnPhone = document.getElementById('type-btn-phone');
+            const btnId = document.getElementById('type-btn-id');
+
+            if (type === 'phone') {
+                label.innerText = 'หมายเลขโทรศัพท์มือถือ (10 หลัก)';
+                input.placeholder = '0812345678';
+                input.maxLength = 10;
+                btnPhone.className = 'py-3 px-4 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-all bg-[#FF303B]/10 border-[#FF303B] text-white';
+                btnId.className = 'py-3 px-4 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-all bg-[#101010] border-[#303030] text-[#A3A3A3] hover:text-white';
+            } else {
+                label.innerText = 'หมายเลขประจำตัวประชาชน (13 หลัก)';
+                input.placeholder = '1100701234567';
+                input.maxLength = 13;
+                btnId.className = 'py-3 px-4 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-all bg-[#FF303B]/10 border-[#FF303B] text-white';
+                btnPhone.className = 'py-3 px-4 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-all bg-[#101010] border-[#303030] text-[#A3A3A3] hover:text-white';
+            }
+            renderQR();
+        }
+
+        // Render QR Code Real-time
+        function renderQR() {
+            const target = document.getElementById('target-input').value.trim();
+            const label = document.getElementById('label-input').value.trim() || 'ร้านค้าของคุณ';
+            const amount = document.getElementById('amount-input').value.trim();
+            const qrColor = document.getElementById('qr-color').value;
+            const bgColor = document.getElementById('bg-color').value;
+            const qrContainer = document.getElementById('qrcode-target');
+            const frame = document.getElementById('qr-frame');
+
+            document.getElementById('preview-label').innerText = label;
+            document.getElementById('preview-target').innerText = target ? (targetType === 'phone' ? `เบอร์: ${target}` : `เลขบัตร: ${target}`) : 'กรุณากรอกข้อมูลรับเงิน';
+            
+            const amtElem = document.getElementById('preview-amount');
+            if (amount && parseFloat(amount) > 0) {
+                amtElem.innerText = `${parseFloat(amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })} THB`;
+                amtElem.classList.remove('hidden');
+            } else {
+                amtElem.classList.add('hidden');
+            }
+
+            frame.style.backgroundColor = bgColor;
+
+            qrContainer.innerHTML = '';
+            const downloadBtn = document.getElementById('download-btn');
+            const copyBtn = document.getElementById('copy-btn');
+
+            if ((targetType === 'phone' && target.length === 10) || (targetType === 'id' && target.length === 13)) {
+                const payload = generatePromptPayPayload(target, amount);
+                if (payload) {
+                    qrcodeObj = new QRCode(qrContainer, {
+                        text: payload,
+                        width: 180,
+                        height: 180,
+                        colorDark: qrColor,
+                        colorLight: bgColor,
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    downloadBtn.disabled = false;
+                    copyBtn.disabled = false;
+                    return;
+                }
+            }
+
+            qrContainer.innerHTML = `<div class="text-xs text-gray-400 py-12 text-center"><i class="fa-solid fa-qrcode text-3xl mb-2 block opacity-40"></i>กรอกข้อมูล PromptPay ให้ครบถ้วน</div>`;
+            downloadBtn.disabled = true;
+            copyBtn.disabled = true;
+        }
+
+        // Copy QR Payload to Clipboard
+        function copyPayload() {
+            const target = document.getElementById('target-input').value.trim();
+            const amount = document.getElementById('amount-input').value.trim();
+            const payload = generatePromptPayPayload(target, amount);
+            if (payload) {
+                navigator.clipboard.writeText(payload);
+                showToast('คัดลอก QR Payload สำเร็จ');
+            }
+        }
+
+        // Download High-Resolution PNG Canvas
+        function downloadQRImage() {
+            const label = document.getElementById('label-input').value.trim() || 'QR-BOX-PAY';
+            const target = document.getElementById('target-input').value.trim();
+            const amount = document.getElementById('amount-input').value.trim();
+            const size = parseInt(document.getElementById('size-select').value) || 512;
+            const bgColor = document.getElementById('bg-color').value;
+            const qrColor = document.getElementById('qr-color').value;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size + 120;
+            const ctx = canvas.getContext('2d');
+
+            // Draw Background
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Get standard QR Canvas element generated
+            const qrCanvas = document.querySelector('#qrcode-target canvas');
+            if (qrCanvas) {
+                const margin = size * 0.1;
+                const qrSize = size - (margin * 2);
+                ctx.drawImage(qrCanvas, margin, margin, qrSize, qrSize);
+
+                // Draw Text Footer
+                ctx.fillStyle = qrColor;
+                ctx.font = `bold ${Math.round(size * 0.045)}px Prompt, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText(label, canvas.width / 2, size + 40);
+
+                ctx.font = `${Math.round(size * 0.035)}px Prompt, sans-serif`;
+                ctx.fillStyle = '#666666';
+                ctx.fillText(target, canvas.width / 2, size + 75);
+
+                if (amount && parseFloat(amount) > 0) {
+                    ctx.font = `bold ${Math.round(size * 0.04)}px Prompt, sans-serif`;
+                    ctx.fillStyle = '#FF303B';
+                    ctx.fillText(`จำนวนเงิน: ${parseFloat(amount).toLocaleString('th-TH')} บาท`, canvas.width / 2, size + 105);
+                }
+
+                const link = document.createElement('a');
+                link.download = `QR-BOX-PAY-${label.replace(/\s+/g, '-')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('ดาวน์โหลดภาพ QR Code สำเร็จ');
+            }
+        }
+
+        // Save Current Recipient Logic
+        function saveCurrentRecipient() {
+            const target = document.getElementById('target-input').value.trim();
+            const label = document.getElementById('label-input').value.trim() || 'ผู้รับเงินใหม่';
+            const amount = document.getElementById('amount-input').value.trim();
+            const note = document.getElementById('note-input').value.trim();
+
+            if (!target) {
+                showToast('กรุณากรอกหมายเลข PromptPay ก่อนบันทึก', 'error');
+                return;
+            }
+
+            const newRec = {
+                id: 'rec-' + Date.now(),
+                label: label,
+                target_type: targetType,
+                identifier: target,
+                default_amount: amount,
+                note: note,
+                created_at: new Date().toISOString()
+            };
+
+            recipients.unshift(newRec);
+            showToast('บันทึกข้อมูลผู้รับเงินเรียบร้อยแล้ว');
+            switchTab('saved');
+        }
+
+        // Render Saved Recipients List
+        function renderSavedRecipients() {
+            const grid = document.getElementById('recipients-grid');
+            if (recipients.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full py-16 text-center bg-[#191919] border border-[#303030] rounded-2xl">
+                        <i class="fa-solid fa-bookmark text-4xl text-[#A3A3A3] mb-3 opacity-40"></i>
+                        <p class="text-base font-medium">ยังไม่มีข้อมูลผู้รับเงินที่บันทึกไว้</p>
+                        <p class="text-sm text-[#A3A3A3] mt-1">ไปที่หน้าสร้าง QR เพื่อบันทึกข้อมูลเก็บไว้ใช้งาน</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = recipients.map(rec => `
+                <div class="bg-[#191919] border border-[#303030] rounded-2xl p-6 space-y-4 hover:border-[#FF303B]/50 transition-all flex flex-col justify-between">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FF303B]/10 text-[#FF303B] border border-[#FF303B]/30">
+                                ${rec.target_type === 'phone' ? 'เบอร์โทรศัพท์' : 'เลขบัตรประชาชน'}
+                            </span>
+                            <span class="text-xs font-mono text-[#A3A3A3]">${new Date(rec.created_at).toLocaleDateString('th-TH')}</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">${rec.label}</h3>
+                        <p class="text-sm font-mono text-[#A3A3A3]">${rec.identifier}</p>
+                        ${rec.default_amount ? `<p class="text-xs text-emerald-400 font-medium">ยอดเงิน: ${parseFloat(rec.default_amount).toLocaleString('th-TH')} บาท</p>` : ''}
+                        ${rec.note ? `<p class="text-xs text-[#A3A3A3] italic">หมายเหตุ: ${rec.note}</p>` : ''}
+                    </div>
+
+                    <div class="pt-4 border-t border-[#303030] flex items-center justify-between gap-2">
+                        <button onclick="useRecipient('${rec.id}')" class="flex-1 py-2 px-3 rounded-lg bg-[#FF303B] text-white text-xs font-bold hover:bg-[#E02832] transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-qrcode"></i> สร้าง QR นี้
+                        </button>
+                        <button onclick="deleteRecipient('${rec.id}')" class="p-2 rounded-lg bg-[#101010] text-[#A3A3A3] hover:text-[#FF303B] border border-[#303030] transition-colors">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function useRecipient(id) {
+            const rec = recipients.find(r => r.id === id);
+            if (rec) {
+                setTargetType(rec.target_type);
+                document.getElementById('target-input').value = rec.identifier;
+                document.getElementById('label-input').value = rec.label;
+                document.getElementById('amount-input').value = rec.default_amount || '';
+                document.getElementById('note-input').value = rec.note || '';
+                switchTab('generator');
+                showToast(`โหลดข้อมูล "${rec.label}" แล้ว`);
+            }
+        }
+
+        function deleteRecipient(id) {
+            recipients = recipients.filter(r => r.id !== id);
+            renderSavedRecipients();
+            showToast('ลบรายการเรียบร้อยแล้ว');
+        }
+
+        // Provider Connection Switch Adapter
+        function toggleProviderConnection() {
+            isProviderConnected = !isProviderConnected;
+            const btn = document.getElementById('provider-toggle-btn');
+            const alert = document.getElementById('provider-alert');
+
+            if (isProviderConnected) {
+                btn.className = 'px-4 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-2 transition-all bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                btn.innerHTML = `<i class="fa-solid fa-server"></i> เชื่อมต่อ Payment Provider แล้ว`;
+                alert.classList.add('hidden');
+                showToast('เชื่อมต่อ Webhook Provider แล้ว');
+            } else {
+                btn.className = 'px-4 py-2.5 rounded-xl border text-sm font-bold flex items-center gap-2 transition-all bg-[#191919] border-[#303030] text-[#A3A3A3] hover:text-white';
+                btn.innerHTML = `<i class="fa-solid fa-server"></i> จำลองการเชื่อมต่อ Payment Provider`;
+                alert.classList.remove('hidden');
+                showToast('ตัดการเชื่อมต่อ Provider แล้ว');
+            }
+            renderTransactions();
+        }
+
+        // Render Transactions List
+        function renderTransactions() {
+            const list = document.getElementById('transactions-list');
+            list.innerHTML = transactions.map(txn => `
+                <div class="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono font-bold text-white">${txn.id}</span>
+                            <span class="text-xs px-2.5 py-0.5 rounded-full border ${
+                                txn.status === 'PAID' 
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                            }">
+                                ${txn.status}
+                            </span>
+                        </div>
+                        <div class="text-xs text-[#A3A3A3]">${txn.provider}</div>
+                        <div class="text-xs text-gray-500 font-mono">สร้างเมื่อ: ${new Date(txn.created_at).toLocaleString('th-TH')}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold text-white">${parseFloat(txn.amount).toLocaleString('th-TH')} ${txn.currency}</div>
+                        <div class="text-xs text-[#A3A3A3]">${txn.verified_at ? `ยืนยันเมื่อ: ${txn.verified_at}` : 'รอการยืนยันเงินเข้าจากธนาคาร'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Auth UI Handlers
+        function renderAuthActions() {
+            const container = document.getElementById('auth-actions-container');
+            if (currentUser) {
+                container.innerHTML = `
+                    <div class="flex items-center gap-3 bg-[#191919] border border-[#303030] px-3 py-1.5 rounded-xl">
+                        <div class="w-8 h-8 rounded-full bg-[#FF303B]/20 text-[#FF303B] flex items-center justify-center font-bold text-xs border border-[#FF303B]/30">
+                            ${currentUser.email.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-xs text-white hidden lg:inline max-w-[120px] truncate">${currentUser.email}</span>
+                        <button onclick="handleLogout()" title="ออกจากระบบ" class="text-[#A3A3A3] hover:text-[#FF303B] transition-colors ml-1">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="openAuth('login')" class="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#191919] border border-[#303030] hover:border-[#FF303B] transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket text-[#FF303B]"></i> เข้าสู่ระบบ
+                    </button>
+                    <button onclick="openAuth('register')" class="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#FF303B] hover:bg-[#E02832] transition-colors shadow-lg shadow-[#FF303B]/20 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> สมัครสมาชิก
+                    </button>
+                `;
+            }
+        }
+
+        function openAuth(mode) {
+            authMode = mode;
+            document.getElementById('auth-title').innerText = mode === 'login' ? 'เข้าสู่ระบบ QR BOX PAY' : 'สมัครสมาชิก QR BOX PAY';
+            document.getElementById('auth-submit-btn').innerText = mode === 'login' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก';
+            document.getElementById('auth-toggle-btn').innerText = mode === 'login' ? 'ยังไม่มีบัญชีผู้ใช้? สมัครสมาชิกที่นี่' : 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ';
+            switchTab('auth');
+        }
+
+        function toggleAuthMode() {
+            openAuth(authMode === 'login' ? 'register' : 'login');
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            currentUser = { email: email, uid: 'user-' + Date.now() };
+            renderAuthActions();
+            showToast(authMode === 'login' ? 'เข้าสู่ระบบสำเร็จ' : 'สมัครสมาชิกสำเร็จ');
+            switchTab('home');
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            renderAuthActions();
+            showToast('ออกจากระบบเรียบร้อยแล้ว');
+            switchTab('home');
+        }
+
+        // Initialize Application
+        window.onload = function() {
+            renderAuthActions();
+            switchTab('home');
+        };
+    </script>
+</body>
+</html>
