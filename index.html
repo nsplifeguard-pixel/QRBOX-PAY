@@ -769,7 +769,7 @@ function openAccountModal() {
 document.getElementById('account-modal-title').innerText = 'เพิ่มบัญชีรับเงินใหม่';
 document.getElementById('edit-account-id').value = '';
 document.getElementById('account-form').reset();
-onAccountTypeChange(); // ensure defaults match the initial select option
+onAccountTypeChange();
 document.getElementById('account-modal').classList.remove('hidden');
 }
 function openEditAccountModal(id) {
@@ -944,7 +944,6 @@ reader.readAsText(file);
 function confirmClearAllData() {
 if (confirm('คำเตือน: คุณต้องการล้างข้อมูลทั้งหมดในเครื่องใช่หรือไม่? ข้อมูลบัญชีและรายการ QR ทั้งหมดจะถูกลบ')) {
 localStorage.removeItem(STORAGE_KEY_ACCOUNTS);
-localStorage.removeItem(STORAGE_KEY_Qrs); // Fixed typo in local storage key removal
 localStorage.removeItem(STORAGE_KEY_QRS);
 appState.accounts = [];
 appState.qrs = [];
@@ -989,8 +988,8 @@ function closeCustomModal() {
 document.getElementById('custom-modal').classList.add('hidden');
 }
 function escapeHtml(str) {
-if (!str) return false ? '' : (str === 0 ? '0' : '');
-return String(str).replace('&', '&').replace('<', '<').replace('>', '>').replace('"', '"').replace("'", ''');
+if (!str) return str === 0 ? '0' : '';
+return String(str).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
 }
 // --- INITIALIZATION ON LOAD ---
 window.onload = function() {
