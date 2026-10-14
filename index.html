@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR BOX PAY — Black Elite Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        elite: {
+                            red: '#e11d48',
+                            redhover: '#be123c',
+                            darkbg: '#090d16',
+                            card: '#111827',
+                            border: '#1f2937',
+                            accent: '#f43f5e'
+                        }
+                    },
+                    fontFamily: {
+                        prompt: ['Prompt', 'sans-serif'],
+                        sarabun: ['Sarabun', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- QRious Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #090d16;
+            color: #f3f4f6;
+        }
+        h1, h2, h3, h4, button, .font-prompt {
+            font-family: 'Prompt', sans-serif;
+        }
+        .elite-card-shadow {
+            box-shadow: 0 10px 30px -5px rgba(225, 29, 72, 0.15), 0 8px 15px -6px rgba(0, 0, 0, 0.5);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e11d48;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-rose-600 selection:text-white bg-slate-950 text-slate-100">
+
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-rose-900/30 text-white shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('generator')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-700 to-rose-500 text-white flex items-center justify-center shadow-lg shadow-rose-900/40 border border-rose-400/30">
+                    <i class="fa-solid fa-qrcode text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg leading-tight tracking-wider bg-gradient-to-r from-white via-slate-200 to-rose-400 bg-clip-text text-transparent">QR BOX PAY</h1>
+                    <p class="text-[10px] text-rose-400 font-bold uppercase tracking-widest flex items-center">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-1 animate-pulse"></span> BLACK ELITE EDITION
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1 text-sm font-medium bg-slate-950/80 p-1.5 rounded-2xl border border-rose-900/40">
+                <button onclick="switchTab('generator')" id="nav-generator" class="px-5 py-2 rounded-xl transition-all duration-200 bg-rose-600 text-white shadow-lg shadow-rose-900/50 font-semibold flex items-center">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>สร้าง & ปรับแต่ง
+                </button>
+                <button onclick="switchTab('history')" id="nav-history" class="px-5 py-2 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center">
+                    <i class="fa-solid fa-clock-rotate-left mr-2"></i>ประวัติรายการ <span id="nav-badge" class="ml-2 px-2 py-0.5 text-xs bg-rose-950 text-rose-300 rounded-full font-bold border border-rose-800/60">0</span>
+                </button>
+                <button onclick="switchTab('presets')" id="nav-presets" class="px-5 py-2 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center">
+                    <i class="fa-solid fa-bookmark mr-2"></i>รายการโปรด
+                </button>
+                <button onclick="switchTab('settings')" id="nav-settings" class="px-5 py-2 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center">
+                    <i class="fa-solid fa-gear mr-2"></i>ตั้งค่า
+                </button>
+            </nav>
+
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-800">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-b border-rose-900/40 px-4 py-3 space-y-2 text-sm font-medium">
+            <button onclick="switchTab('generator'); toggleMobileMenu();" class="w-full text-left px-4 py-2.5 rounded-xl bg-rose-600 text-white flex items-center">
+                <i class="fa-solid fa-wand-magic-sparkles mr-3"></i>สร้าง & ปรับแต่ง QR
+            </button>
+            <button onclick="switchTab('history'); toggleMobileMenu();" class="w-full text-left px-4 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 flex items-center justify-between">
+                <span><i class="fa-solid fa-clock-rotate-left mr-3 text-rose-500"></i>ประวัติรายการ</span>
+                <span id="mobile-badge" class="px-2 py-0.5 text-xs bg-rose-950 text-rose-300 rounded-full font-bold">0</span>
+            </button>
+            <button onclick="switchTab('presets'); toggleMobileMenu();" class="w-full text-left px-4 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 flex items-center">
+                <i class="fa-solid fa-bookmark mr-3 text-rose-400"></i>รายการโปรด (Presets)
+            </button>
+            <button onclick="switchTab('settings'); toggleMobileMenu();" class="w-full text-left px-4 py-2.5 rounded-xl text-slate-300 hover:bg-slate-800 flex items-center">
+                <i class="fa-solid fa-gear mr-3 text-slate-400"></i>ตั้งค่าระบบ
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+        <section id="tab-generator" class="space-y-6">
+            
+            <!-- Section Header Indicator -->
+            <div class="flex items-center justify-between bg-slate-900/80 p-4 rounded-2xl border border-slate-800 shadow-md">
+                <div>
+                    <h2 class="font-bold text-lg text-white flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-rose-600 inline-block mr-2.5 animate-pulse"></span>หน้าสร้างและปรับแต่ง PromptPay QR Card
+                    </h2>
+                    <p class="text-xs text-slate-400 pl-5">ระบบคำนวณภาษี/ส่วนลด จัดวางเลย์เอาต์ และบันทึกพรีเซ็ตแบบครบวงจร</p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 bg-rose-950/80 text-rose-400 rounded-lg border border-rose-800/50 hidden sm:inline-block">Elite Customizer</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- Left Control Form Panel -->
+                <div class="lg:col-span-6 bg-slate-900/90 p-6 sm:p-7 rounded-3xl border border-slate-800 elite-card-shadow space-y-5">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <h3 class="font-bold text-slate-200 flex items-center text-sm sm:text-base">
+                            <i class="fa-solid fa-sliders text-rose-500 mr-2"></i> 1. ตั้งค่าและระบุรายละเอียด
+                        </h3>
+                        <button type="button" onclick="resetForm()" class="text-xs text-slate-400 hover:text-rose-400 transition flex items-center">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> ล้างข้อมูล
+                        </button>
+                    </div>
+
+                    <form id="qr-form" onsubmit="event.preventDefault();" class="space-y-4">
+
+                        <!-- PromptPay Number -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                                เบอร์โทร หรือ เลขบัตร/ผู้เสียภาษี <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                                    <i class="fa-solid fa-mobile-screen-button"></i>
+                                </span>
+                                <input type="text" id="input-promptpay" placeholder="เช่น 0812345678" maxlength="13" required
+                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            </div>
+                        </div>
+
+                        <!-- Account / Receiver Name -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                                ชื่อบัญชี / ร้านค้า / โลโก้ข้อความ <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500">
+                                    <i class="fa-solid fa-store"></i>
+                                </span>
+                                <input type="text" id="input-receiver" placeholder="เช่น ร้านค้า มหาแซ่บ ELITE" required
+                                    class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            </div>
+                        </div>
+
+                        <!-- Advanced Amount Calculation (VAT / Discount Feature) -->
+                        <div class="bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800/80 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                    <i class="fa-solid fa-calculator text-rose-500 mr-1"></i> คำนวณยอดเงินรวม (บาท)
+                                </label>
+                                <span class="text-[10px] text-slate-400">ระบุหรือไม่ก็ได้</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-3 sm:col-span-1">
+                                    <span class="text-[10px] text-slate-400 block mb-0.5">ยอดฐาน</span>
+                                    <input type="number" id="input-base-amount" step="0.01" placeholder="0.00" oninput="calculateTotalAmount()"
+                                        class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-white focus:ring-1 focus:ring-rose-500">
+                                </div>
+                                <div class="col-span-3 sm:col-span-1">
+                                    <span class="text-[10px] text-slate-400 block mb-0.5">ภาษี VAT (%)</span>
+                                    <select id="input-vat" onchange="calculateTotalAmount()" class="w-full px-2 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-white focus:ring-1 focus:ring-rose-500">
+                                        <option value="0">0% (ไม่มี)</option>
+                                        <option value="7">7% (VAT)</option>
+                                    </select>
+                                </div>
+                                <div class="col-span-3 sm:col-span-1">
+                                    <span class="text-[10px] text-slate-400 block mb-0.5">ส่วนลด (บาท)</span>
+                                    <input type="number" id="input-discount" step="0.01" placeholder="0" oninput="calculateTotalAmount()"
+                                        class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono text-white focus:ring-1 focus:ring-rose-500">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-1">
+                                <span class="text-xs font-bold text-rose-400">ยอดชำระสุทธิ:</span>
+                                <input type="number" id="input-amount" step="0.01" placeholder="0.00"
+                                    class="w-36 text-right px-3 py-1.5 bg-slate-900 border border-rose-900/50 rounded-xl text-sm font-bold font-mono text-rose-400 focus:outline-none">
+                            </div>
+
+                            <div class="flex flex-wrap gap-1.5 pt-1">
+                                <button type="button" onclick="setQuickAmount(100)" class="px-2.5 py-1 bg-slate-900 hover:bg-rose-950 hover:text-rose-400 rounded-lg text-xs font-mono text-slate-300 border border-slate-800 transition">100 ฿</button>
+                                <button type="button" onclick="setQuickAmount(200)" class="px-2.5 py-1 bg-slate-900 hover:bg-rose-950 hover:text-rose-400 rounded-lg text-xs font-mono text-slate-300 border border-slate-800 transition">200 ฿</button>
+                                <button type="button" onclick="setQuickAmount(500)" class="px-2.5 py-1 bg-slate-900 hover:bg-rose-950 hover:text-rose-400 rounded-lg text-xs font-mono text-slate-300 border border-slate-800 transition">500 ฿</button>
+                                <button type="button" onclick="setQuickAmount(1000)" class="px-2.5 py-1 bg-slate-900 hover:bg-rose-950 hover:text-rose-400 rounded-lg text-xs font-mono text-slate-300 border border-slate-800 transition">1,000 ฿</button>
+                                <button type="button" onclick="clearAmount()" class="px-2.5 py-1 bg-rose-950/60 text-rose-400 hover:bg-rose-900 rounded-lg text-xs transition border border-rose-800/40">ล้างยอดเงิน</button>
+                            </div>
+                        </div>
+
+                        <!-- Caption Note -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">ข้อความหมายเหตุ / ท้ายรูป</label>
+                            <input type="text" id="input-caption" value="สแกนเพื่อชำระเงิน • ขอบคุณที่ใช้บริการ"
+                                class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <button type="button" onclick="saveRecord()" class="py-3 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-lg shadow-rose-900/40 transition flex items-center justify-center">
+                                <i class="fa-solid fa-bookmark mr-1.5"></i> บันทึกประวัติ
+                            </button>
+                            <button type="button" onclick="savePreset()" class="py-3 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition flex items-center justify-center border border-slate-700">
+                                <i class="fa-solid fa-star mr-1.5 text-amber-400"></i> เก็บเป็นโปรด
+                            </button>
+                            <button type="button" onclick="downloadQRCard()" class="py-3 px-3 rounded-xl bg-slate-950 hover:bg-black text-rose-400 font-bold text-xs transition flex items-center justify-center border border-rose-900/60">
+                                <i class="fa-solid fa-download mr-1.5"></i> ดาวน์โหลดรูป
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-6 flex flex-col items-center">
+                    <div class="w-full bg-slate-900/90 rounded-3xl border border-slate-800 p-6 sm:p-8 elite-card-shadow relative overflow-hidden flex flex-col items-center">
+                        <div class="w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+                            <span class="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center">
+                                <i class="fa-solid fa-eye text-rose-500 mr-2"></i> 2. ตัวอย่างการแสดงผลบัตร
+                            </span>
+                            <button onclick="openFullscreenQR()" class="text-xs bg-rose-950 text-rose-300 hover:bg-rose-900 font-bold px-3 py-1.5 rounded-xl border border-rose-800/60 transition flex items-center">
+                                <i class="fa-solid fa-expand mr-1.5"></i> แสดงเต็มจอ
+                            </button>
+                        </div>
+
+                        <!-- Position Layout Switcher -->
+                        <div class="w-full bg-slate-950 p-3 rounded-2xl border border-slate-800 mb-6">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                                <i class="fa-solid fa-chess-board text-rose-500 mr-1.5"></i> เลือกตำแหน่งวาง QR Code
+                            </label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="layout-pos" value="right" checked onchange="updateLayoutMode()" class="peer sr-only">
+                                    <div class="py-2 text-center text-xs font-semibold rounded-xl border border-slate-800 bg-slate-900 peer-checked:border-rose-600 peer-checked:bg-rose-600 peer-checked:text-white text-slate-300 hover:bg-slate-800 transition shadow-sm flex items-center justify-center">
+                                        <i class="fa-solid fa-arrow-right-to-bracket mr-1 sm:mr-1.5"></i> ขวา
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="layout-pos" value="left" onchange="updateLayoutMode()" class="peer sr-only">
+                                    <div class="py-2 text-center text-xs font-semibold rounded-xl border border-slate-800 bg-slate-900 peer-checked:border-rose-600 peer-checked:bg-rose-600 peer-checked:text-white text-slate-300 hover:bg-slate-800 transition shadow-sm flex items-center justify-center">
+                                        <i class="fa-solid fa-arrow-left-to-bracket mr-1 sm:mr-1.5"></i> ซ้าย
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="layout-pos" value="top" onchange="updateLayoutMode()" class="peer sr-only">
+                                    <div class="py-2 text-center text-xs font-semibold rounded-xl border border-slate-800 bg-slate-900 peer-checked:border-rose-600 peer-checked:bg-rose-600 peer-checked:text-white text-slate-300 hover:bg-slate-800 transition shadow-sm flex items-center justify-center">
+                                        <i class="fa-solid fa-arrow-up mr-1 sm:mr-1.5"></i> บน
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="layout-pos" value="bottom" onchange="updateLayoutMode()" class="peer sr-only">
+                                    <div class="py-2 text-center text-xs font-semibold rounded-xl border border-slate-800 bg-slate-900 peer-checked:border-rose-600 peer-checked:bg-rose-600 peer-checked:text-white text-slate-300 hover:bg-slate-800 transition shadow-sm flex items-center justify-center">
+                                        <i class="fa-solid fa-arrow-down mr-1 sm:mr-1.5"></i> ล่าง
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Dynamic Card Preview Display Container -->
+                        <div id="preview-card-box" class="w-full max-w-md bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-xl flex flex-col md:flex-row gap-6 items-center transition-all duration-300 relative">
+                            
+                            <!-- QR Code Holder -->
+                            <div id="preview-qr-wrapper" class="flex flex-col items-center flex-shrink-0 relative">
+                                <div id="card-header-badge" class="w-full text-center py-1.5 px-3 rounded-xl bg-gradient-to-r from-rose-700 to-rose-600 text-white text-xs font-black tracking-wider mb-3 shadow-md">
+                                    PROMPTPAY QR
+                                </div>
+                                <div class="p-3 bg-white rounded-2xl shadow-lg relative cursor-pointer group" onclick="openFullscreenQR()">
+                                    <canvas id="qr-canvas" class="rounded-lg w-[180px] h-[180px] sm:w-[200px] sm:h-[200px]"></canvas>
+                                    <div class="absolute inset-0 bg-slate-950/70 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-bold backdrop-blur-[2px]">
+                                        <i class="fa-solid fa-maximize text-2xl mb-1 text-rose-400"></i>
+                                        คลิกเพื่อเปิดเต็มจอ
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Details Display -->
+                            <div id="preview-details-wrapper" class="flex-grow text-center md:text-left space-y-3 w-full">
+                                <div>
+                                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block">ชื่อบัญชีผู้รับเงิน</span>
+                                    <h4 id="preview-receiver" class="font-bold text-lg text-white break-words mt-0.5">ร้านค้า มหาแซ่บ ELITE</h4>
+                                </div>
+
+                                <div>
+                                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block">หมายเลขพร้อมเพย์</span>
+                                    <p id="preview-promptpay" class="text-sm font-mono text-rose-400 font-bold mt-0.5">-</p>
+                                </div>
+
+                                <div id="preview-amount-container" class="hidden pt-1">
+                                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block">ยอดชำระสุทธิ</span>
+                                    <div class="inline-flex items-baseline px-3 py-1 bg-rose-950/60 border border-rose-800/60 rounded-xl mt-0.5">
+                                        <span id="preview-amount" class="text-lg font-bold text-rose-400 font-mono mr-1">0.00</span>
+                                        <span class="text-xs text-rose-300 font-medium">บาท</span>
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 border-t border-slate-800/80">
+                                    <p id="preview-caption" class="text-xs text-slate-400 italic">สแกนเพื่อชำระเงิน • ขอบคุณที่ใช้บริการ</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="tab-history" class="hidden space-y-6">
+            <div class="flex items-center justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-md">
+                <div>
+                    <h2 class="font-bold text-lg text-white flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-rose-600 inline-block mr-2.5"></span>ประวัติรายการที่บันทึก
+                    </h2>
+                    <p class="text-xs text-slate-400 pl-5">บันทึกธุรกรรมและประวัติย่อสำหรับการตรวจสอบย้อนหลัง</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 elite-card-shadow space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                    <h3 class="font-bold text-lg text-slate-200 flex items-center">
+                        <i class="fa-solid fa-list-check text-rose-500 mr-2.5"></i> รายการทั้งหมด
+                    </h3>
+                    <div class="flex items-center space-x-3">
+                        <input type="text" id="search-input" onkeyup="filterHistory()" placeholder="ค้นหาชื่อ หรือ เบอร์..."
+                            class="w-full sm:w-60 px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-rose-500">
+                        <button onclick="clearAllHistory()" class="px-3.5 py-2 rounded-xl border border-rose-900/60 text-rose-400 hover:bg-rose-950 text-xs font-semibold transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i> ลบทั้งหมด
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-950/50">
+                                <th class="py-3.5 px-4 rounded-l-xl">เวลา</th>
+                                <th class="py-3.5 px-4">ชื่อบัญชี/ร้านค้า</th>
+                                <th class="py-3.5 px-4">พร้อมเพย์</th>
+                                <th class="py-3.5 px-4">จำนวนเงิน</th>
+                                <th class="py-3.5 px-4 rounded-r-xl text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-800 text-sm text-slate-300"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-presets" class="hidden space-y-6">
+            <div class="flex items-center justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-md">
+                <div>
+                    <h2 class="font-bold text-lg text-white flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-amber-500 inline-block mr-2.5"></span>รายการโปรดที่บันทึกไว้ (Presets)
+                    </h2>
+                    <p class="text-xs text-slate-400 pl-5">กดเลือกเพื่อโหลดการตั้งค่ามาใช้งานทันที</p>
+                </div>
+            </div>
+
+            <div id="presets-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Dynamic Presets Card Injection -->
+            </div>
+        </section>
+
+        <section id="tab-settings" class="hidden space-y-6">
+            <div class="flex items-center justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-md">
+                <div>
+                    <h2 class="font-bold text-lg text-white flex items-center">
+                        <span class="w-3 h-3 rounded-full bg-slate-500 inline-block mr-2.5"></span>ตั้งค่าระบบเริ่มต้น
+                    </h2>
+                    <p class="text-xs text-slate-400 pl-5">กำหนดค่าเริ่มต้นสำหรับใช้งานด่วน</p>
+                </div>
+            </div>
+
+            <div class="max-w-xl mx-auto bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-800 elite-card-shadow space-y-6">
+                <form onsubmit="event.preventDefault(); saveSettings();" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">ชื่อผู้รับเงิน/ร้านค้า ประจำ</label>
+                        <input type="text" id="setting-default-receiver" placeholder="เช่น ร้านค้า มหาแซ่บ ELITE"
+                            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:ring-1 focus:ring-rose-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">เบอร์พร้อมเพย์ ประจำ</label>
+                        <input type="text" id="setting-default-promptpay" maxlength="13" placeholder="เช่น 0812345678"
+                            class="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm font-mono text-white focus:ring-1 focus:ring-rose-500">
+                    </div>
+                    <button type="submit" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-lg shadow-rose-900/40 transition">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i> บันทึกการตั้งค่า
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-950 border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+        <p>© 2026 QR BOX PAY — BLACK ELITE EDITION • Custom PromptPay Studio</p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden transition-all duration-300 transform translate-y-10 opacity-0">
+        <div class="bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-rose-900/50 flex items-center space-x-3 text-sm">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-rose-500 text-lg"></i>
+            <span id="toast-message" class="font-medium">ทำรายการสำเร็จ</span>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-lg hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-slate-900 text-white w-full max-w-xl rounded-3xl p-6 sm:p-8 border border-slate-800 elite-card-shadow relative flex flex-col items-center">
+            
+            <button onclick="closeFullscreenQR()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition border border-slate-700">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <span class="text-xs font-bold uppercase tracking-widest text-rose-400 mb-4 flex items-center">
+                <i class="fa-solid fa-expand text-rose-500 mr-2"></i> หน้าร้านค้าโหมดขยายเต็มจอ
+            </span>
+
+            <!-- Dynamic Layout Modal Card Box (Mirrors Generator Layout Selection) -->
+            <div id="modal-card-box" class="w-full bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-2xl flex flex-col md:flex-row gap-6 items-center transition-all duration-300">
+                
+                <!-- QR Wrapper -->
+                <div id="modal-qr-wrapper" class="flex flex-col items-center flex-shrink-0">
+                    <div id="modal-header-badge" class="w-full text-center py-1.5 px-4 rounded-xl bg-gradient-to-r from-rose-700 to-rose-600 text-white text-xs font-black tracking-wider mb-3 shadow-md">
+                        PROMPTPAY QR
+                    </div>
+                    <div class="p-3 bg-white rounded-2xl shadow-xl">
+                        <canvas id="modal-qr-canvas" class="w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] rounded-lg"></canvas>
+                    </div>
+                </div>
+
+                <!-- Text Details Wrapper -->
+                <div id="modal-details-wrapper" class="flex-grow text-center md:text-left space-y-3 w-full">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block">ชื่อบัญชีผู้รับเงิน</span>
+                        <h3 id="modal-receiver" class="font-bold text-xl text-white break-words mt-0.5">ชื่อบัญชีผู้รับเงิน</h3>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block">หมายเลขพร้อมเพย์</span>
+                        <p id="modal-promptpay" class="text-base font-mono text-rose-400 font-bold mt-0.5">-</p>
+                    </div>
+
+                    <div id="modal-amount-container" class="hidden pt-1">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-widest block">ยอดชำระสุทธิ</span>
+                        <div class="inline-flex items-baseline px-4 py-1.5 bg-rose-950/80 border border-rose-800/80 rounded-xl mt-0.5">
+                            <span id="modal-amount" class="text-2xl font-bold text-rose-400 font-mono mr-1">0.00</span>
+                            <span class="text-xs text-rose-300 font-medium">บาท</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800">
+                        <p id="modal-caption" class="text-xs text-slate-400 italic">สแกนเพื่อชำระเงิน • ขอบคุณที่ใช้บริการ</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="w-full pt-5 flex gap-3">
+                <button onclick="downloadQRCard()" class="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-lg transition flex items-center justify-center">
+                    <i class="fa-solid fa-download mr-2"></i> ดาวน์โหลดรูปบัตร
+                </button>
+                <button onclick="closeFullscreenQR()" class="py-3 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition border border-slate-700">
+                    ปิดหน้าจอ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let historyRecords = [];
+        let presetRecords = [];
+        let qr = null;
+        let modalQr = null;
+
+        window.addEventListener('load', () => {
+            initQR();
+            loadHistoryFromStorage();
+            loadPresetsFromStorage();
+            updateLayoutMode();
+            updatePreview();
+            renderPresets();
+        });
+
+        function initQR() {
+            qr = new QRious({
+                element: document.getElementById('qr-canvas'),
+                size: 200,
+                level: 'H'
+            });
+
+            modalQr = new QRious({
+                element: document.getElementById('modal-qr-canvas'),
+                size: 260,
+                level: 'H'
+            });
+        }
+
+        function openFullscreenQR() {
+            const promptpay = document.getElementById('input-promptpay').value.trim();
+            const receiver = document.getElementById('input-receiver').value.trim() || 'ชื่อบัญชีผู้รับเงิน';
+            const amount = document.getElementById('input-amount').value.trim();
+            const caption = document.getElementById('input-caption').value.trim() || 'สแกนเพื่อชำระเงิน • ขอบคุณที่ใช้บริการ';
+            const pos = document.querySelector('input[name="layout-pos"]:checked').value;
+
+            document.getElementById('modal-receiver').innerText = receiver;
+            document.getElementById('modal-promptpay').innerText = promptpay || '-';
+            document.getElementById('modal-caption').innerText = caption;
+
+            const modalAmtContainer = document.getElementById('modal-amount-container');
+            if (amount && parseFloat(amount) > 0) {
+                document.getElementById('modal-amount').innerText = parseFloat(amount).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                modalAmtContainer.classList.remove('hidden');
+            } else {
+                modalAmtContainer.classList.add('hidden');
+            }
+
+            if (promptpay.length >= 10) {
+                try {
+                    modalQr.value = buildPromptPayPayload(promptpay, amount);
+                } catch (e) {
+                    modalQr.value = "ERROR";
+                }
+            } else {
+                modalQr.value = "QR BOX PAY ELITE";
+            }
+
+            const modalCardBox = document.getElementById('modal-card-box');
+            const detailsWrapper = document.getElementById('modal-details-wrapper');
+
+            modalCardBox.className = "w-full bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-2xl flex gap-6 items-center transition-all duration-300";
+            detailsWrapper.className = "flex-grow space-y-3 w-full";
+
+            if (pos === 'right') {
+                modalCardBox.classList.add('flex-col', 'md:flex-row');
+                detailsWrapper.classList.add('text-center', 'md:text-left');
+            } else if (pos === 'left') {
+                modalCardBox.classList.add('flex-col', 'md:flex-row-reverse');
+                detailsWrapper.classList.add('text-center', 'md:text-left');
+            } else if (pos === 'top') {
+                modalCardBox.classList.add('flex-col');
+                detailsWrapper.classList.add('text-center');
+            } else if (pos === 'bottom') {
+                modalCardBox.classList.add('flex-col-reverse');
+                detailsWrapper.classList.add('text-center');
+            }
+
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function closeFullscreenQR() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        function calculateTotalAmount() {
+            const base = parseFloat(document.getElementById('input-base-amount').value) || 0;
+            const vatRate = parseFloat(document.getElementById('input-vat').value) || 0;
+            const discount = parseFloat(document.getElementById('input-discount').value) || 0;
+
+            let total = base + (base * vatRate / 100) - discount;
+            if (total < 0) total = 0;
+
+            document.getElementById('input-amount').value = total > 0 ? total.toFixed(2) : '';
+            updatePreview();
+        }
+
+        function setQuickAmount(val) {
+            document.getElementById('input-base-amount').value = val;
+            calculateTotalAmount();
+        }
+
+        function clearAmount() {
+            document.getElementById('input-base-amount').value = '';
+            document.getElementById('input-discount').value = '';
+            document.getElementById('input-amount').value = '';
+            updatePreview();
+        }
+
+        function updateLayoutMode() {
+            const pos = document.querySelector('input[name="layout-pos"]:checked').value;
+            const cardBox = document.getElementById('preview-card-box');
+            const detailsWrapper = document.getElementById('preview-details-wrapper');
+
+            cardBox.className = "w-full max-w-md bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-xl flex gap-6 items-center transition-all duration-300";
+            detailsWrapper.className = "flex-grow space-y-3 w-full";
+
+            if (pos === 'right') {
+                cardBox.classList.add('flex-col', 'md:flex-row');
+                detailsWrapper.classList.add('text-center', 'md:text-left');
+            } else if (pos === 'left') {
+                cardBox.classList.add('flex-col', 'md:flex-row-reverse');
+                detailsWrapper.classList.add('text-center', 'md:text-left');
+            } else if (pos === 'top') {
+                cardBox.classList.add('flex-col');
+                detailsWrapper.classList.add('text-center');
+            } else if (pos === 'bottom') {
+                cardBox.classList.add('flex-col-reverse');
+                detailsWrapper.classList.add('text-center');
+            }
+        }
+
+        function buildPromptPayPayload(target, amount) {
+            let cleanTarget = target.replace(/[^0-9]/g, '');
+            if (cleanTarget.length === 10 && cleanTarget.startsWith('0')) {
+                cleanTarget = '66' + cleanTarget.substring(1);
+            }
+            let targetTag = (cleanTarget.length === 13) 
+                ? '02' + ('00' + cleanTarget.length).slice(-2) + cleanTarget
+                : '01' + ('00' + cleanTarget.length).slice(-2) + cleanTarget;
+
+            let merchantAcc = '0016A000000677010111' + targetTag;
+            let merchantAccField = '29' + ('00' + merchantAcc.length).slice(-2) + merchantAcc;
+            let payload = '000201' + '010211' + merchantAccField + '5802TH' + '5303764';
+
+            if (amount && parseFloat(amount) > 0) {
+                let amtStr = parseFloat(amount).toFixed(2);
+                payload += '54' + ('00' + amtStr.length).slice(-2) + amtStr;
+            }
+            payload += '6304';
+            return payload + generateCRC16(payload);
+        }
+
+        function generateCRC16(payload) {
+            let crc = 0xFFFF;
+            for (let i = 0; i < payload.length; i++) {
+                crc ^= (payload.charCodeAt(i) << 8);
+                for (let j = 0; j < 8; j++) {
+                    if ((crc & 0x8000) !== 0) {
+                        crc = (crc << 1) ^ 0x1021;
+                    } else {
+                        crc = crc << 1;
+                    }
+                    crc &= 0xFFFF;
+                }
+            }
+            let hex = crc.toString(16).toUpperCase();
+            while (hex.length < 4) hex = '0' + hex;
+            return hex;
+        }
+
+        function updatePreview() {
+            const promptpay = document.getElementById('input-promptpay').value.trim();
+            const receiver = document.getElementById('input-receiver').value.trim() || 'ชื่อบัญชีผู้รับเงิน';
+            const amount = document.getElementById('input-amount').value.trim();
+            const caption = document.getElementById('input-caption').value.trim() || 'สแกนเพื่อชำระเงิน • ขอบคุณที่ใช้บริการ';
+
+            document.getElementById('preview-receiver').innerText = receiver;
+            document.getElementById('preview-promptpay').innerText = promptpay || '-';
+            document.getElementById('preview-caption').innerText = caption;
+
+            const amtContainer = document.getElementById('preview-amount-container');
+            if (amount && parseFloat(amount) > 0) {
+                document.getElementById('preview-amount').innerText = parseFloat(amount).toLocaleString('th-TH', { minimumFractionDigits: 2 });
+                amtContainer.classList.remove('hidden');
+            } else {
+                amtContainer.classList.add('hidden');
+            }
+
+            if (promptpay.length >= 10) {
+                try {
+                    qr.value = buildPromptPayPayload(promptpay, amount);
+                } catch (e) {
+                    qr.value = "ERROR";
+                }
+            } else {
+                qr.value = "QR BOX PAY ELITE";
+            }
+        }
+
+        ['input-promptpay', 'input-receiver', 'input-amount', 'input-caption'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePreview);
+        });
+
+        function switchTab(tab) {
+            ['generator', 'history', 'presets', 'settings'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${t}`);
+                if (btn) btn.className = "px-5 py-2 rounded-xl transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/60 flex items-center";
+            });
+
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tab}`);
+            if (activeBtn) activeBtn.className = "px-5 py-2 rounded-xl transition-all duration-200 bg-rose-600 text-white shadow-lg shadow-rose-900/50 font-semibold flex items-center";
+
+            if (tab === 'history') renderHistoryTable(historyRecords);
+            if (tab === 'presets') renderPresets();
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        function saveRecord() {
+            const promptpay = document.getElementById('input-promptpay').value.trim();
+            const receiver = document.getElementById('input-receiver').value.trim();
+            if (!promptpay || !receiver) {
+                showToast('กรุณากรอกเบอร์พร้อมเพย์และชื่อผู้รับเงิน', 'error');
+                return;
+            }
+            const record = {
+                id: 'REC-' + Date.now().toString().slice(-6),
+                timestamp: new Date().toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }),
+                promptpay, receiver,
+                amount: document.getElementById('input-amount').value.trim(),
+                caption: document.getElementById('input-caption').value.trim(),
+                layout: document.querySelector('input[name="layout-pos"]:checked').value
+            };
+            historyRecords.unshift(record);
+            saveHistoryToStorage();
+            updateBadges();
+            showToast('บันทึกประวัติสำเร็จ', 'success');
+        }
+
+        function savePreset() {
+            const promptpay = document.getElementById('input-promptpay').value.trim();
+            const receiver = document.getElementById('input-receiver').value.trim();
+            if (!promptpay || !receiver) {
+                showToast('กรุณากรอกข้อมูลให้ครบถ้วนก่อนบันทึกโปรด', 'error');
+                return;
+            }
+            const preset = {
+                id: 'PRE-' + Date.now().toString().slice(-6),
+                promptpay, receiver,
+                caption: document.getElementById('input-caption').value.trim(),
+                layout: document.querySelector('input[name="layout-pos"]:checked').value
+            };
+            presetRecords.unshift(preset);
+            savePresetsToStorage();
+            showToast('เพิ่มเข้าสู่รายการโปรดแล้ว', 'success');
+        }
+
+        function renderPresets() {
+            const grid = document.getElementById('presets-grid');
+            if (presetRecords.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 bg-slate-900 rounded-3xl border border-slate-800">ยังไม่มีรายการโปรดที่บันทึกไว้</div>`;
+                return;
+            }
+            grid.innerHTML = presetRecords.map(p => `
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-rose-400 font-mono">${p.promptpay}</span>
+                        </div>
+                        <h4 class="font-bold text-white text-base">${p.receiver}</h4>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick='loadPreset(${JSON.stringify(p)})' class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition">
+                            <i class="fa-solid fa-bolt mr-1"></i> โหลดใช้
+                        </button>
+                        <button onclick='deletePreset("${p.id}")' class="px-3 py-2 bg-slate-950 hover:bg-slate-800 text-rose-400 border border-slate-800 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadPreset(item) {
+            document.getElementById('input-promptpay').value = item.promptpay;
+            document.getElementById('input-receiver').value = item.receiver;
+            document.getElementById('input-caption').value = item.caption || '';
+            if (item.layout) {
+                document.querySelector(`input[name="layout-pos"][value="${item.layout}"]`).checked = true;
+                updateLayoutMode();
+            }
+            updatePreview();
+            switchTab('generator');
+            showToast('โหลดรายการโปรดสำเร็จ', 'success');
+        }
+
+        function deletePreset(id) {
+            presetRecords = presetRecords.filter(p => p.id !== id);
+            savePresetsToStorage();
+            renderPresets();
+            showToast('ลบรายการโปรดเรียบร้อย', 'success');
+        }
+
+        function renderHistoryTable(data) {
+            const tbody = document.getElementById('history-table-body');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500">ยังไม่มีรายการที่บันทึกไว้</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-950/50 transition">
+                    <td class="py-3.5 px-4 text-xs font-mono text-slate-400">${item.timestamp}</td>
+                    <td class="py-3.5 px-4 font-semibold text-white">${item.receiver}</td>
+                    <td class="py-3.5 px-4 font-mono text-rose-400">${item.promptpay}</td>
+                    <td class="py-3.5 px-4 font-mono text-emerald-400">${item.amount ? parseFloat(item.amount).toLocaleString() + ' ฿' : '-'}</td>
+                    <td class="py-3.5 px-4 text-center space-x-1">
+                        <button onclick='loadRecord(${JSON.stringify(item)})' class="p-2 rounded-lg bg-slate-800 text-rose-400 hover:bg-slate-700" title="เรียกใช้งาน"><i class="fa-solid fa-arrow-up-right-from-square text-xs"></i></button>
+                        <button onclick='deleteRecord("${item.id}")' class="p-2 rounded-lg bg-rose-950/60 text-rose-400 hover:bg-rose-900" title="ลบ"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterHistory() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const filtered = historyRecords.filter(i => i.receiver.toLowerCase().includes(q) || i.promptpay.toLowerCase().includes(q));
+            renderHistoryTable(filtered);
+        }
+
+        function loadRecord(item) {
+            document.getElementById('input-promptpay').value = item.promptpay;
+            document.getElementById('input-receiver').value = item.receiver;
+            document.getElementById('input-amount').value = item.amount || '';
+            document.getElementById('input-caption').value = item.caption || '';
+            if (item.layout) {
+                document.querySelector(`input[name="layout-pos"][value="${item.layout}"]`).checked = true;
+                updateLayoutMode();
+            }
+            updatePreview();
+            switchTab('generator');
+            showToast('ดึงข้อมูลรายการสำเร็จ', 'success');
+        }
+
+        function deleteRecord(id) {
+            historyRecords = historyRecords.filter(i => i.id !== id);
+            saveHistoryToStorage();
+            renderHistoryTable(historyRecords);
+            updateBadges();
+            showToast('ลบประวัติสำเร็จ', 'success');
+        }
+
+        function clearAllHistory() {
+            historyRecords = [];
+            saveHistoryToStorage();
+            renderHistoryTable(historyRecords);
+            updateBadges();
+            showToast('ลบประวัติทั้งหมดแล้ว', 'success');
+        }
+
+        function updateBadges() {
+            document.getElementById('nav-badge').innerText = historyRecords.length;
+            document.getElementById('mobile-badge').innerText = historyRecords.length;
+        }
+
+        function saveHistoryToStorage() {
+            try { window._storedHistory = JSON.stringify(historyRecords); } catch(e){}
+        }
+
+        function loadHistoryFromStorage() {
+            try {
+                if (window._storedHistory) {
+                    historyRecords = JSON.parse(window._storedHistory);
+                    updateBadges();
+                }
+            } catch(e){}
+        }
+
+        function savePresetsToStorage() {
+            try { window._storedPresets = JSON.stringify(presetRecords); } catch(e){}
+        }
+
+        function loadPresetsFromStorage() {
+            try {
+                if (window._storedPresets) {
+                    presetRecords = JSON.parse(window._storedPresets);
+                }
+            } catch(e){}
+        }
+
+        function saveSettings() {
+            showToast('บันทึกการตั้งค่าเรียบร้อย', 'success');
+        }
+
+        function resetForm() {
+            document.getElementById('qr-form').reset();
+            document.querySelector('input[name="layout-pos"][value="right"]').checked = true;
+            updateLayoutMode();
+            updatePreview();
+            showToast('รีเซ็ตฟอร์มเรียบร้อย', 'success');
+        }
+
+        function downloadQRCard() {
+            const promptpay = document.getElementById('input-promptpay').value.trim();
+            if (!promptpay) {
+                showToast('กรุณากรอกเบอร์พร้อมเพย์ก่อนดาวน์โหลด', 'error');
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 750;
+            canvas.height = 520;
+
+            // Background Slate Dark
+            ctx.fillStyle = '#090d16';
+            ctx.roundRect(0, 0, canvas.width, canvas.height, 28);
+            ctx.fill();
+
+            const pos = document.querySelector('input[name="layout-pos"]:checked').value;
+
+            // Header Banner
+            ctx.fillStyle = '#be123c';
+            ctx.roundRect(35, 35, canvas.width - 70, 65, 16);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 22px Prompt, sans-serif';
+            ctx.fillText('PROMPTPAY QR', 60, 75);
+
+            const qrImg = new Image();
+            qrImg.onload = function() {
+                let qrX = 60, detailsX = 310, detailsWidth = 380;
+
+                if (pos === 'left') {
+                    qrX = 470;
+                    detailsX = 60;
+                } else if (pos === 'top' || pos === 'bottom') {
+                    qrX = (canvas.width - 210) / 2;
+                    detailsX = 50;
+                    detailsWidth = 650;
+                }
+
+                let qrY = (pos === 'bottom') ? 130 : 140;
+                let textY = (pos === 'bottom') ? 370 : 150;
+
+                ctx.fillStyle = '#ffffff';
+                ctx.roundRect(qrX - 10, qrY - 10, 230, 230, 20);
+                ctx.fill();
+                ctx.drawImage(qrImg, qrX, qrY, 210, 210);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 24px Prompt, sans-serif';
+                ctx.fillText(document.getElementById('input-receiver').value || 'ชื่อบัญชีผู้รับเงิน', (pos === 'top' || pos === 'bottom') ? canvas.width/2 : detailsX, textY, detailsWidth);
+
+                ctx.fillStyle = '#f43f5e';
+                ctx.font = 'bold 18px Sarabun, monospace';
+                ctx.fillText('พร้อมเพย์: ' + promptpay, (pos === 'top' || pos === 'bottom') ? canvas.width/2 : detailsX, textY + 40);
+
+                const amount = document.getElementById('input-amount').value.trim();
+                if (amount && parseFloat(amount) > 0) {
+                    ctx.fillStyle = '#fb7185';
+                    ctx.font = 'bold 26px Prompt, sans-serif';
+                    ctx.fillText('ยอดชำระสุทธิ: ' + parseFloat(amount).toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' บาท', (pos === 'top' || pos === 'bottom') ? canvas.width/2 : detailsX, textY + 90);
+                }
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '14px Sarabun, sans-serif';
+                ctx.fillText(document.getElementById('input-caption').value, (pos === 'top' || pos === 'bottom') ? canvas.width/2 : detailsX, textY + 140);
+
+                const link = document.createElement('a');
+                link.download = `PromptPay_${promptpay}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                showToast('ดาวน์โหลดรูปภาพสำเร็จ', 'success');
+            };
+            qrImg.src = qr.toDataURL();
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-message').innerText = msg;
+            icon.className = type === 'error' ? "fa-solid fa-triangle-exclamation text-amber-400 text-lg" : "fa-solid fa-circle-check text-rose-500 text-lg";
+
+            toast.classList.remove('hidden', 'translate-y-10', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
